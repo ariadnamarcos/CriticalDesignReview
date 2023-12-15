@@ -10,51 +10,49 @@ function parse_query($query){   //fa una llista key-value separant per =
     }
     return $params;
 }
-$table = ltrim($_SERVER['PATH_INFO'], '/'); //s'ha de treure el '/' davant de la taula
-if($table == 'students'){
-    $consulta = "SELECT userName FROM {$table}";
-}else{
-    $consulta = "SELECT * FROM {$table}";  
-}
-if($_SERVER['QUERY_STRING'] != NULL){
+$table = ltrim($_SERVER['PATH_INFO'], '/'); //s'ha de treure el '/' devant de la taula
+$consulta = "SELECT * FROM {$table}";
+$limit = NULL;
+if($_SERVER['QUERY_STRING']!= NULL){
     $query = explode('&', $_SERVER['QUERY_STRING']); //quedarà un array [day=Fri, hour=8:00, subject=PBE]
 
     $params = parse_query($query);  //Array ( [day] => FRi, [hour] => 8:00, [subject] => PBE )
     $primeraCondicio = true;
     foreach($params as $key => $value){
         if(isset($key)){
-            $consulta .= ($primeraCondicio ? " WHERE" : " AND");  //tria WHERE si &primeraciondició=True
-            $primeraCondicio = false;  
+            if($key !="limit"){
+                $consulta .= ($primeraCondicio ? " WHERE" : " AND");  //tria WHERE si &primeraciondició=True
+                $primeraCondicio = false;  
  
-            $keyParts = explode('[', $key);     //en aquesta secció de codi es on posem les codicións lt and gt
-            if (isset($keyParts[1])) {
-                $cond = trim($keyParts[1],']');
-                if($cond =='gt'){
-                    $simb ='>';
-                }else if ($cond =='lt'){
-                    $simb ='<';
-                }                               //si volem posar mes condicionants només hem d'afegir else if
-            }else{
+                $keyParts = explode('[', $key);     //en aquesta secció de codi es on posem les codicións lt and gt
                 $simb ='=';
-            }
-            $key = $keyParts[0];
-            $consulta .=" $key $simb '$value'";
+                if (isset($keyParts[1])) {
+                    $cond = trim($keyParts[1],']');
+                    if($cond =='gt'){
+                        $simb ='>';
+                    }else if ($cond =='lt'){
+                        $simb ='<';
+                    }else if ($cond =='gte'){
+                        $simb = '>=';
+                    }else if ($cond =='lte'){
+                        $simb = '<=';
+                    }
+                    //si volem posar mes condicionants només hem d'afegir else if
+                }
+                $key = $keyParts[0];
+                if($key=="date" && $value = "now"){
+                    $value = "CURRENT_DATE";
+                }
+                $consulta .=" $key $simb '$value'";
 
+            }else if($key =="limit"){
+                $limit=$value;
             }
+        }
     }
-    
 }
 
-if ($table == 'marks' && isset($params['uid'])) {
-	$consulta .= " AND uid = '{$params['uid']}'";
-}
-if ($table == 'marks'){
-	$consulta .= " ORDER BY subject ASC";
-}
-if($table == 'tasks'){
-	$consulta .= " ORDER BY date ASC";
-}
-
+// codi per ordenar timetables segons l'hora actual
 
 $dia = date('N');
 $hora_actual = date('H:i:s');
@@ -76,7 +74,17 @@ if ($table == 'timetables') {
 	}else{ // si es cap de setmana simplement donem l'horari normal
 		$consulta .= " ORDER BY FIELD(day, $order_clause), hour";
 	}
+}else if($table == 'tasks'){
+    $consulta .=" ORDER BY date ASC";
+}else if ($table == 'marks'){
+    $consulta .=" ORDER BY subject ASC";
 }
+
+
+if ($limit != NULL){
+    $consulta .=" LIMIT $limit";
+}
+
 
 $result = mysqli_query($conn, $consulta);  //executa la consulta $consulta a la db $conn
 $data= array(); //l'inicialitzem com un array buit
