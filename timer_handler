@@ -1,0 +1,21 @@
+import time
+from timeit  import Timer
+import threading
+
+class newTimer:
+
+    def __init__(self, timeout, callback):
+        self.timer = None
+        self.timeout = timeout  #funcio per executar quan acaba
+        self.callback = callback
+
+    def startTimer(self):
+        if callable(self.callback):
+            self.timer = threading.Timer(self.timeout, self.callback)
+            self.timer.start()
+
+    def stopTimer(self):
+        if self.timer is not None:
+            self.timer.cancel()
+            self.timer = None
+
