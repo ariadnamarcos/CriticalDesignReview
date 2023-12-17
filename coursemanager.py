@@ -8,9 +8,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 
 import http.client
-import time
-from timeit  import Timer
-from timer_handler import newTimer
 
 class CourseManager(Gtk.Window):
     def __init__(self):
@@ -37,7 +34,6 @@ class CourseManager(Gtk.Window):
         self.input_thread.daemon = True
         self.input_thread.start()
         
-
         self.create_logout_button()
         self.create_entry("Introduce lo que quieras ver:")
         
@@ -88,8 +84,13 @@ class CourseManager(Gtk.Window):
     def create_entry(self, text):
         self.entry = Gtk.Entry()
         self.entry.set_placeholder_text(text)
-        self.entry.connect("activate", lambda entry: self.consultaThread(entry = self.entry))
+        
+        #self.entry.connect("activate",( lambda entry: self.consultaThread(entry = self.entry), self.restart_timer))
+        self.entry.connect("activate", lambda entry: self.entry_activated(entry = self.entry))
         self.box.pack_start(self.entry, True, True, 0)
+
+    def entry_activated(self, entry):
+        self.consultaThread(entry)
 
     def consultaThread(self, entry):  #creem un thread per consultar el server de forma concurrent
         text = entry.get_text()
