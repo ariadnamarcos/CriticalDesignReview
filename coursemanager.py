@@ -8,6 +8,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 
 import http.client
+import time
 
 class CourseManager(Gtk.Window):
     def __init__(self):
@@ -62,7 +63,8 @@ class CourseManager(Gtk.Window):
         self.outbutton.connect("clicked", lambda button: self.logout_thread())
 
     def logout_thread(self):
-        threading.Thread(target=self.logout).start()
+        GLib.idle_add(self.logout)
+        time.sleep(1)
 
     def logout(self):
         with self.lock:
@@ -96,6 +98,7 @@ class CourseManager(Gtk.Window):
         text = entry.get_text()
         thread1 = threading.Thread(target= self.consultarServer, args=(text, ))  #li passem el que esta escrit i el uid
         thread1.start()
+        time.sleep(1)
         
     def consultarServer(self, text):
         self.table = text
@@ -107,7 +110,7 @@ class CourseManager(Gtk.Window):
                 self.table = self.table + "?uid=" + self.uid
         data = self.get("/CriticalDesignPBE/back/index.php/{}".format(self.table))
         self.create_table(data)
-        
+        time.sleep(1)
         self.show_all()
 
     def create_table(self, json_array):
@@ -135,11 +138,16 @@ class CourseManager(Gtk.Window):
             self.treeview.append_column(column)
 
         self.box.pack_start(self.treeview, True, True, 0)
+        time.sleep(1)
 
     def destroy_table(self, json_array):
         self.liststore = None
         
+    def destroy_wnd(self):
+        if self.conn:
+            self.conn.close()
+        Gtk.main_quit()
 
 win = CourseManager()
-win.connect("destroy", Gtk.main_quit)
+win.connect("destroy", win.destroy_wnd)
 Gtk.main()
